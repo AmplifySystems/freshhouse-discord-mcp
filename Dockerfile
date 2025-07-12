@@ -1,4 +1,4 @@
-# Fresh House Discord MCP Server
+# Updated Dockerfile
 FROM node:18-alpine
 
 # Set working directory
