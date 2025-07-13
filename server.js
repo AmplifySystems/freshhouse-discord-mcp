@@ -2,7 +2,7 @@
 // Custom implementation with SSE endpoints for n8n integration
 
 import express from 'express';
-import { Client, GatewayIntentBits, EmbedBuilder } from 'discord.js';
+import { Client, GatewayIntentBits, EmbedBuilder, ChannelType } from 'discord.js';
 import cors from 'cors';
 import { createClient } from '@supabase/supabase-js';
 
@@ -260,12 +260,13 @@ async function getDiscordChannels(params) {
   }
   
   const channels = guild.channels.cache
-    .filter(channel => channel.type === 0) // Text channels
+    .filter(channel => channel.type === ChannelType.GuildText) // Use proper ChannelType enum
     .map(channel => ({
       id: channel.id,
       name: channel.name,
       type: 'text',
-      position: channel.position
+      position: channel.position,
+      topic: channel.topic || null
     }));
   
   return {
@@ -295,10 +296,11 @@ async function getDiscordMessages(params) {
     author: {
       id: msg.author.id,
       username: msg.author.username,
-      display_name: msg.author.displayName
+      display_name: msg.author.displayName || msg.author.username
     },
     timestamp: msg.createdAt.toISOString(),
-    attachments: msg.attachments.size
+    attachments: msg.attachments.size,
+    embeds: msg.embeds.length
   }));
   
   return {
@@ -316,6 +318,10 @@ async function manageDiscordRoles(params) {
   }
   
   const guild = discord.guilds.cache.first();
+  if (!guild) {
+    throw new Error('No Discord server found');
+  }
+  
   const member = await guild.members.fetch(user_id);
   const role = await guild.roles.fetch(role_id);
   
